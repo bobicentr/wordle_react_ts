@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 import type { RowStatus } from "./types";
 import wordsRaw from "./assets/words.txt?raw";
@@ -11,7 +11,33 @@ function App() {
     const randomIndex = Math.floor(Math.random() * wordsArray.length);
     return wordsArray[randomIndex];
   });
-  const [rows, setRows] = useState<RowStatus[]>(["active", "inactive", "inactive", "inactive", "inactive"])
+  const [rows, setRows] = useState<RowStatus[]>([
+    "active",
+    "inactive",
+    "inactive",
+    "inactive",
+    "inactive",
+  ]);
+  const [input, setInputt] = useState<string[]>([]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Backspace") {
+        setInputt((prev) => prev.slice(0, -1));
+        return;
+      }
+      if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
+        setInputt((prev) => {
+          if (prev.length >= 5) return prev;
+          return [...prev, e.key.toLowerCase()];
+        });
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   return (
     <>
