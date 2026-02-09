@@ -1,6 +1,7 @@
 import type { CellStatus } from "../types";
 interface WorldCellProps {
   status: CellStatus;
+  value: string;
 }
 
 const statusStyles = {
@@ -11,7 +12,7 @@ const statusStyles = {
   unchecked: "bg-transparent border-slate-700",
 };
 
-export default function WordleCell({status} : WorldCellProps) {
+export default function WordleCell({status, value} : WorldCellProps) {
 
-  return <div className={`w-15 h-15 border ${statusStyles[status]}`}></div>;
+  return <div className={`flex items-center justify-center w-15 h-15 border ${statusStyles[status]}`}>{value}</div>;
 }
