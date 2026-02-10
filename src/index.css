@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+@theme {
+    --animate-cell: flip 0.6s ease-in-out forwards;
+    --animate-wrong: shaker 0.3s linear;
+
+    @keyframes flip {
+        0% { transform: rotateX(0deg); }
+        50% { transform: rotateX(90deg); }
+        100% { transform: rotateX(0deg); }
+    }
+
+    @keyframes shaker {
+        0% { transform: translateX(0); }
+        25% { transform: translateX(-7px); }
+        50% { transform: translateX(7px); }
+        75% { transform: translateX(-7px); }
+        100% { transform: translateX(0); }
+    }
+}

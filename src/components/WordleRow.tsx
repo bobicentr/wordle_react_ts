@@ -1,6 +1,5 @@
-import { useState } from "react";
 import WordleCell from "./WordleCell";
-import type { RowStatus, CellStatus } from "../types";
+import type { CellStatus, RowStatus } from "../types";
 
 interface WordleRowProps {
   status: RowStatus;
@@ -8,6 +7,8 @@ interface WordleRowProps {
   id: number;
   activeRow: number;
   history: string[][];
+  cells: CellStatus[][];
+  wrongRow: number | null;
 }
 
 export default function WordleRow({
@@ -16,20 +17,33 @@ export default function WordleRow({
   id,
   activeRow,
   history,
+  cells,
+  wrongRow,
 }: WordleRowProps) {
-  const cells = [0, 1, 2, 3, 4];
+  const dummyCells = [0, 1, 2, 3, 4];
 
   return (
-    <div className="flex gap-4">
-      {cells.map((index) => {
+    <div className={`flex gap-4 ${wrongRow === id ? "animate-wrong" : ""}`}>
+      {dummyCells.map((index) => {
         let char = "";
+        let cellStatus: CellStatus = "idle";
+
         if (id === activeRow) {
           char = input[index] || "";
         } else if (status === "submitted") {
-          char = history[id] ? history[id][index] : "";
+          char = history[id][index];
+          cellStatus = cells[id][index];
         }
 
-        return <WordleCell key={index} status="idle" value={char} />;
+        return (
+          <WordleCell
+            key={index}
+            status={cellStatus}
+            value={char}
+            id={index} // ПЕРЕДАЕМ ИНДЕКС ДЛЯ ЗАДЕРЖКИ
+            isSubmitted={status === "submitted"} // ФЛАГ ДЛЯ ЗАПУСКА АНИМАЦИИ
+          />
+        );
       })}
     </div>
   );

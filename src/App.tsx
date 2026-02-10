@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import "./App.css";
-import type { RowStatus } from "./types";
+import type { CellStatus, RowStatus } from "./types";
 import wordsRaw from "./assets/words.txt?raw";
 import WordleRow from "./components/WordleRow";
 
@@ -17,54 +17,73 @@ function App() {
     "inactive",
     "inactive",
     "inactive",
+    "inactive"
   ]);
   const [input, setInput] = useState<string[]>([]);
   const [history, setHistory] = useState<string[][]>([]);
+  const [cells, setCells] = useState<CellStatus[][]>([]);
   const [firstActiveRow, setFirstActiveRow] = useState(0);
+  const [wrongRow, setWrongRow] = useState<number | null>(null);
 
   useEffect(() => {
+    const handleEnter = () => {
+      if (input.length === 5) {
+        const currentWord = input.join("").toLowerCase();
+        if (!wordsArray.includes(currentWord)) {
+          setWrongRow(firstActiveRow);
+          setTimeout(() => setWrongRow(null), 300); 
+          return;
+        }
+
+        const activeIndex = rows.indexOf("active");
+        if (activeIndex !== -1) {
+          const activeRowCells: CellStatus[] = [];
+          for (let i = 0; i < 5; i++) {
+            if (input[i].toLowerCase() === word[i]) {
+              activeRowCells.push("correct");
+            } else if (word.includes(input[i].toLowerCase())) {
+              activeRowCells.push("present");
+            } else {
+              activeRowCells.push("absent");
+            }
+          }
+          setCells((prev) => [...prev, activeRowCells]);
+        }
+
+        setRows((prevRows) => {
+          const newRows = [...prevRows];
+          newRows[activeIndex] = "submitted";
+          if (activeIndex < rows.length - 1) newRows[activeIndex + 1] = "active";
+          return newRows;
+        });
+
+        setHistory((prev) => [...prev, input]);
+        setFirstActiveRow((prev) => prev + 1);
+        setInput([]);
+      } else {
+        setWrongRow(firstActiveRow);
+        setTimeout(() => setWrongRow(null), 500);
+      }
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Backspace") {
         setInput((prev) => prev.slice(0, -1));
         return;
       }
-
       if (e.key === "Enter") {
-        if (input.length === 5) {
-          const currentWord = input.join("").toLowerCase();
-          if (!wordsArray.includes(currentWord)) {
-            alert("Такого слова нет в словаре! " + currentWord);
-            return;
-          }
-
-          setRows((prevRows) => {
-            const activeIndex = prevRows.indexOf("active");
-            if (activeIndex === -1) return prevRows;
-            const newRows = [...prevRows];
-            newRows[activeIndex] = "submitted";
-            if (activeIndex < 4) {
-              newRows[activeIndex + 1] = "active";
-            }
-            return newRows;
-          });
-
-          setHistory((prev) => [...prev, input]);
-          setFirstActiveRow((prev) => prev + 1);
-          setInput([]);
-        }
+        handleEnter();
         return;
       }
-
       if (input.length < 5 && e.key.length === 1 && e.key.match(/[a-z]/i)) {
         setInput((prev) => [...prev, e.key.toUpperCase()]);
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [input, history, firstActiveRow]);
+  }, [input, history, firstActiveRow, cells, rows, word]);
 
   return (
     <>
@@ -81,6 +100,8 @@ function App() {
             id={index}
             activeRow={firstActiveRow}
             history={history}
+            cells={cells}
+            wrongRow={wrongRow}
           />
         ))}
       </div>
