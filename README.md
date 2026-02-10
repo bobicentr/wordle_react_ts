@@ -19,7 +19,7 @@ Wordle Game — это реализация игры Wordle на стеке **Re
 
 Склонировать репозиторий  
 ```bash
-git clone https://github.com/bobicentr/react_wordle_ts.git  
+git clone https://github.com/bobicentr/wordle_react_ts.git  
 cd react_wordle_ts  
 ```
 
