@@ -11,7 +11,6 @@ function App() {
   const [word] = useState(() => {
     const randomIndex = Math.floor(Math.random() * wordsArray.length);
     const randomWord = wordsArray[randomIndex];
-    console.log(randomWord);
     return randomWord;
   });
   const [rows, setRows] = useState<RowStatus[]>([
