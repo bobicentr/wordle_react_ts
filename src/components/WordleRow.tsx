@@ -40,8 +40,8 @@ export default function WordleRow({
             key={index}
             status={cellStatus}
             value={char}
-            id={index} // ПЕРЕДАЕМ ИНДЕКС ДЛЯ ЗАДЕРЖКИ
-            isSubmitted={status === "submitted"} // ФЛАГ ДЛЯ ЗАПУСКА АНИМАЦИИ
+            id={index} 
+            isSubmitted={status === "submitted"} 
           />
         );
       })}

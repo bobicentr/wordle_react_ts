@@ -4,15 +4,21 @@ import type { CellStatus, RowStatus } from "./types";
 import wordsRaw from "./assets/words.txt?raw";
 import WordleRow from "./components/WordleRow";
 import EndModal from "./components/EndModal";
+import VirtualKeyboard from "./components/VirtualKeyboard";
 
 const wordsArray: string[] = wordsRaw.split(/\r?\n/);
 
 function App() {
   const [word] = useState(() => {
     const randomIndex = Math.floor(Math.random() * wordsArray.length);
-    const randomWord = wordsArray[randomIndex];
-    return randomWord;
+    return wordsArray[randomIndex];
   });
+
+  // 🔧 Partial — клавиши появляются постепенно
+  const [keyboardStatuses, setKeyboardStatuses] = useState<
+    Partial<Record<string, CellStatus>>
+  >({});
+
   const [rows, setRows] = useState<RowStatus[]>([
     "active",
     "inactive",
@@ -21,6 +27,7 @@ function App() {
     "inactive",
     "inactive",
   ]);
+
   const [input, setInput] = useState<string[]>([]);
   const [history, setHistory] = useState<string[][]>([]);
   const [cells, setCells] = useState<CellStatus[][]>([]);
@@ -29,95 +36,124 @@ function App() {
   const [hasEnded, setHasEnded] = useState(false);
   const [isWinner, setIsWinner] = useState(false);
 
-  useEffect(() => {
-    const handleEnter = () => {
-      if (input.length === 5) {
-        const currentWord = input.join("").toLowerCase();
-        if (!wordsArray.includes(currentWord)) {
-          setWrongRow(firstActiveRow);
-          setTimeout(() => setWrongRow(null), 300);
-          return;
-        }
-        setHistory((prev) => [...prev, input]);
+  const updateKeyboard = (char: string, status: CellStatus) => {
+    setKeyboardStatuses((prev) => {
+      const current = prev[char];
+      if (current === "correct") return prev;
+      if (current === "present" && status === "absent") return prev;
+      return { ...prev, [char]: status };
+    });
+  };
 
-        const activeIndex = rows.indexOf("active");
-        if (activeIndex !== -1) {
-          const activeRowCells: CellStatus[] = Array(5).fill("absent");
-          const targetLetters = word.split("");
-          const inputLetters = input.map((letter) => letter.toLowerCase());
-          for (let i = 0; i < 5; i++) {
-            if (inputLetters[i] === targetLetters[i]) {
-              activeRowCells[i] = "correct";
-              targetLetters[i] = "";
-              inputLetters[i] = "";
-            }
-          }
-          for (let i = 0; i < 5; i++) {
-            if (activeRowCells[i] === "correct") continue;
-            const char = inputLetters[i];
-            const targetIndex = targetLetters.indexOf(char);
-            if (char !== "" && targetIndex !== -1) {
-              activeRowCells[i] = "present";
-              targetLetters[targetIndex] = "";
-            }
-          }
-          setCells((prev) => [...prev, activeRowCells]);
-          if (activeRowCells.every((status) => status === "correct")) {
-            setTimeout(() => {
-              window.removeEventListener("keydown", handleKeyDown);
-              setHasEnded(true);
-              setIsWinner(true);
-            }, 1200);
-          }
-        }
+  const handleEnter = () => {
+    if (input.length !== 5) {
+      setWrongRow(firstActiveRow);
+      setTimeout(() => setWrongRow(null), 500);
+      return;
+    }
 
-        setRows((prevRows) => {
-          const newRows = [...prevRows];
-          newRows[activeIndex] = "submitted";
-          if (activeIndex < rows.length - 1)
-            newRows[activeIndex + 1] = "active";
-          return newRows;
-        });
-        if (firstActiveRow === rows.length - 1) {
-          setTimeout(() => {
-            window.removeEventListener("keydown", handleKeyDown);
-            setHasEnded(true);
-          }, 1200);
-        }
-        setFirstActiveRow((prev) => prev + 1);
-        setInput([]);
+    const currentWord = input.join("").toLowerCase();
+
+    if (!wordsArray.includes(currentWord)) {
+      setWrongRow(firstActiveRow);
+      setTimeout(() => setWrongRow(null), 300);
+      return;
+    }
+
+    setHistory((prev) => [...prev, input]);
+
+    const activeIndex = rows.indexOf("active");
+    if (activeIndex === -1) return;
+
+    const activeRowCells: CellStatus[] = Array(5).fill("absent");
+
+    const targetLetters = word.split("");
+    const inputLetters = input.map((l) => l.toLowerCase());
+
+    for (let i = 0; i < 5; i++) {
+      if (inputLetters[i] === targetLetters[i]) {
+        activeRowCells[i] = "correct";
+
+        updateKeyboard(inputLetters[i], "correct"); 
+
+        targetLetters[i] = "";
+        inputLetters[i] = "";
+      }
+    }
+
+    for (let i = 0; i < 5; i++) {
+      if (activeRowCells[i] === "correct") continue;
+
+      const char = inputLetters[i];
+      if (!char) continue;
+
+      const targetIndex = targetLetters.indexOf(char);
+
+      if (targetIndex !== -1) {
+        activeRowCells[i] = "present";
+
+        updateKeyboard(char, "present"); 
+
+        targetLetters[targetIndex] = "";
       } else {
-        setWrongRow(firstActiveRow);
-        setTimeout(() => setWrongRow(null), 500);
+        updateKeyboard(char, "absent"); 
       }
-    };
+    }
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Backspace") {
-        setInput((prev) => prev.slice(0, -1));
-        return;
+    setCells((prev) => [...prev, activeRowCells]);
+
+    if (activeRowCells.every((s) => s === "correct")) {
+      setTimeout(() => {
+        setHasEnded(true);
+        setIsWinner(true);
+      }, 1200);
+    }
+
+    setRows((prevRows) => {
+      const newRows = [...prevRows];
+      newRows[activeIndex] = "submitted";
+      if (activeIndex < prevRows.length - 1) {
+        newRows[activeIndex + 1] = "active";
       }
-      if (e.key === "Enter") {
-        handleEnter();
-        return;
-      }
-      if (input.length < 5 && e.key.length === 1 && e.key.match(/[a-z]/i)) {
-        setInput((prev) => [...prev, e.key.toUpperCase()]);
-      }
-    };
+      return newRows;
+    });
+
+    if (firstActiveRow === rows.length - 1) {
+      setTimeout(() => {
+        setHasEnded(true);
+      }, 1200);
+    }
+
+    setFirstActiveRow((prev) => prev + 1);
+    setInput([]);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (hasEnded) return;
+
+    if (e.key === "Backspace") {
+      setInput((prev) => prev.slice(0, -1));
+      return;
+    }
+
+    if (e.key === "Enter") {
+      handleEnter();
+      return;
+    }
+
+    if (input.length < 5 && /^[a-z]$/i.test(e.key)) {
+      setInput((prev) => [...prev, e.key.toUpperCase()]);
+    }
+  };
+
+  useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [input, history, firstActiveRow, cells, rows, word]);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown, input.length, hasEnded]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div
-        id="wordleContainer"
-        className="grid cols-1 gap-2 max-w-screen place-items-center"
-      >
-        {/* Все строки. key=index, т.к. количество не будет меняться */}
+    <div className="min-h-screen flex flex-col gap-4 items-center justify-center">
+      <div className="grid cols-1 gap-2 max-w-screen place-items-center">
         {rows.map((rowStatus, index) => (
           <WordleRow
             key={index}
@@ -131,6 +167,9 @@ function App() {
           />
         ))}
       </div>
+
+      <VirtualKeyboard keyboardStatuses={keyboardStatuses} />
+
       <EndModal hasEnded={hasEnded} isWinner={isWinner} word={word} />
     </div>
   );
