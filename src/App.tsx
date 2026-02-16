@@ -14,7 +14,6 @@ function App() {
     return wordsArray[randomIndex];
   });
 
-  // 🔧 Partial — клавиши появляются постепенно
   const [keyboardStatuses, setKeyboardStatuses] = useState<
     Partial<Record<string, CellStatus>>
   >({});
@@ -35,6 +34,28 @@ function App() {
   const [wrongRow, setWrongRow] = useState<number | null>(null);
   const [hasEnded, setHasEnded] = useState(false);
   const [isWinner, setIsWinner] = useState(false);
+  const [suggestionsAreOn, setSuggestionsAreOn] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  const toggleSuggestions = (e: any) => {
+    e.target.blur();
+    setSuggestionsAreOn(!suggestionsAreOn);
+  };
+
+  const updateSuggestions = (input: string[]) => {
+    if (input.length === 0) {
+      setSuggestions([])
+      return
+    }
+    const suggetionsList = []
+    for (const word of wordsArray) {
+      if (word.startsWith(input.join("").toLowerCase())) {
+        suggetionsList.push(word);
+      }
+      if (suggetionsList.length === 3) break;
+    }
+    setSuggestions(suggetionsList);
+  };
 
   const updateKeyboard = (char: string, status: CellStatus) => {
     setKeyboardStatuses((prev) => {
@@ -74,7 +95,7 @@ function App() {
       if (inputLetters[i] === targetLetters[i]) {
         activeRowCells[i] = "correct";
 
-        updateKeyboard(inputLetters[i], "correct"); 
+        updateKeyboard(inputLetters[i], "correct");
 
         targetLetters[i] = "";
         inputLetters[i] = "";
@@ -92,11 +113,11 @@ function App() {
       if (targetIndex !== -1) {
         activeRowCells[i] = "present";
 
-        updateKeyboard(char, "present"); 
+        updateKeyboard(char, "present");
 
         targetLetters[targetIndex] = "";
       } else {
-        updateKeyboard(char, "absent"); 
+        updateKeyboard(char, "absent");
       }
     }
 
@@ -128,21 +149,31 @@ function App() {
     setInput([]);
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleKeyDown = (e: KeyboardEvent) => {
     if (hasEnded) return;
 
     if (e.key === "Backspace") {
-      setInput((prev) => prev.slice(0, -1));
+      setInput((prev) => {
+        const newInput = prev.slice(0, -1);
+        updateSuggestions(newInput);
+        return newInput;
+      });
       return;
     }
 
     if (e.key === "Enter") {
       handleEnter();
+      setSuggestions([]);
       return;
     }
 
     if (input.length < 5 && /^[a-z]$/i.test(e.key)) {
-      setInput((prev) => [...prev, e.key.toUpperCase()]);
+      setInput((prev) => {
+        const newInput = [...prev, e.key.toUpperCase()];
+        updateSuggestions(newInput);
+        return newInput;
+      });
     }
   };
 
@@ -152,23 +183,48 @@ function App() {
   }, [handleKeyDown, input.length, hasEnded]);
 
   return (
-    <div className="min-h-screen flex flex-col gap-4 items-center justify-center">
-      <div className="grid cols-1 gap-2 max-w-screen place-items-center">
-        {rows.map((rowStatus, index) => (
-          <WordleRow
-            key={index}
-            status={rowStatus}
-            input={input}
-            id={index}
-            activeRow={firstActiveRow}
-            history={history}
-            cells={cells}
-            wrongRow={wrongRow}
-          />
-        ))}
+    <div className="min-h-screen grid grid-cols-[1fr_auto_1fr] items-start pt-20 p-4">
+      <div />
+
+      <div className="flex flex-col gap-10 items-center">
+        <div className="grid cols-1 gap-2 max-w-screen place-items-center">
+          {rows.map((rowStatus, index) => (
+            <WordleRow
+              key={index}
+              status={rowStatus}
+              input={input}
+              id={index}
+              activeRow={firstActiveRow}
+              history={history}
+              cells={cells}
+              wrongRow={wrongRow}
+            />
+          ))}
+        </div>
+        <VirtualKeyboard keyboardStatuses={keyboardStatuses} />
       </div>
 
-      <VirtualKeyboard keyboardStatuses={keyboardStatuses} />
+      <div className="flex flex-col gap-5 self-start justify-self-start">
+        <button
+          className={`border p-2 rounded cursor-pointer whitespace-nowrap
+          ${suggestionsAreOn ? "bg-green-400 border-green-700" : "bg-red-500 border-red-800 text-white"}`}
+          onClick={(e) => toggleSuggestions(e)}
+        >
+          {suggestionsAreOn ? "Отключить подсказки" : "Включить подсказки"}
+        </button>
+        {suggestionsAreOn && (
+          <h2 className="max-w-[200px] text-lg">
+            Возможные варианты:
+            {suggestions.length > 0 &&
+              suggestions.map((suggestion, index) => (
+                <p key={index} className="text-xl">
+                  <span className="text-slate-400">{input.join("")}</span>
+                  {suggestion.slice(input.length).toUpperCase()}
+                </p>
+              ))}
+          </h2>
+        )}
+      </div>
 
       <EndModal hasEnded={hasEnded} isWinner={isWinner} word={word} />
     </div>
