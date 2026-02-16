@@ -37,17 +37,17 @@ function App() {
   const [suggestionsAreOn, setSuggestionsAreOn] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
-  const toggleSuggestions = (e: any) => {
-    e.target.blur();
+  const toggleSuggestions = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.blur();
     setSuggestionsAreOn(!suggestionsAreOn);
   };
 
   const updateSuggestions = (input: string[]) => {
     if (input.length === 0) {
-      setSuggestions([])
-      return
+      setSuggestions([]);
+      return;
     }
-    const suggetionsList = []
+    const suggetionsList = [];
     for (const word of wordsArray) {
       if (word.startsWith(input.join("").toLowerCase())) {
         suggetionsList.push(word);
@@ -149,11 +149,19 @@ function App() {
     setInput([]);
   };
 
+  const handleVirtualKeyboardClick = (key: string) => {
+    processInput(key);
+  };
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleKeyDown = (e: KeyboardEvent) => {
+    processInput(e.key);
+  };
+
+  const processInput = (char: string) => {
     if (hasEnded) return;
 
-    if (e.key === "Backspace") {
+    if (char === "Backspace") {
       setInput((prev) => {
         const newInput = prev.slice(0, -1);
         updateSuggestions(newInput);
@@ -162,15 +170,15 @@ function App() {
       return;
     }
 
-    if (e.key === "Enter") {
+    if (char === "Enter") {
       handleEnter();
       setSuggestions([]);
       return;
     }
 
-    if (input.length < 5 && /^[a-z]$/i.test(e.key)) {
+    if (input.length < 5 && /^[a-z]$/i.test(char)) {
       setInput((prev) => {
-        const newInput = [...prev, e.key.toUpperCase()];
+        const newInput = [...prev, char.toUpperCase()];
         updateSuggestions(newInput);
         return newInput;
       });
@@ -201,10 +209,13 @@ function App() {
             />
           ))}
         </div>
-        <VirtualKeyboard keyboardStatuses={keyboardStatuses} />
+        <VirtualKeyboard
+          keyboardStatuses={keyboardStatuses}
+          handleVirtualKeyboardClick={handleVirtualKeyboardClick}
+        />
       </div>
 
-      <div className="flex flex-col gap-5 self-start justify-self-start">
+      <div className="flex flex-col gap-2 self-start justify-self-start">
         <button
           className={`border p-2 rounded cursor-pointer whitespace-nowrap
           ${suggestionsAreOn ? "bg-green-400 border-green-700" : "bg-red-500 border-red-800 text-white"}`}
@@ -215,13 +226,16 @@ function App() {
         {suggestionsAreOn && (
           <h2 className="max-w-[200px] text-lg">
             Возможные варианты:
-            {suggestions.length > 0 &&
+            {suggestions.length > 0 ? (
               suggestions.map((suggestion, index) => (
                 <p key={index} className="text-xl">
                   <span className="text-slate-400">{input.join("")}</span>
                   {suggestion.slice(input.length).toUpperCase()}
                 </p>
-              ))}
+              ))
+            ) : (
+              <p className="text-slate-600">Начните вводить...</p>
+            )}
           </h2>
         )}
       </div>
