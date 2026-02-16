@@ -191,7 +191,7 @@ function App() {
   }, [handleKeyDown, input.length, hasEnded]);
 
   return (
-    <div className="min-h-screen grid grid-cols-[1fr_auto_1fr] items-start pt-20 p-4">
+    <div className="min-h-screen grid grid-cols-[1fr_auto_1fr] items-start pt-10 p-4">
       <div />
 
       <div className="flex flex-col gap-10 items-center">
